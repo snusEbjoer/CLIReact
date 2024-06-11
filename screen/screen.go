@@ -17,9 +17,10 @@ type Renderer interface {
 }
 
 type Screen struct {
-	Views    []Renderer
-	Controls *enveloup.Enveloup
-	State    *state.State
+	Views        []Renderer
+	Controls     *enveloup.Enveloup
+	State        *state.State
+	CustomStates []*state.State
 }
 
 func New(views []Renderer, controller *enveloup.Enveloup) *Screen {
@@ -27,6 +28,7 @@ func New(views []Renderer, controller *enveloup.Enveloup) *Screen {
 		views,
 		controller,
 		state.New(0, "controller"),
+		[]*state.State{},
 	}
 }
 func (s *Screen) Show() string {
@@ -44,8 +46,8 @@ func (s *Screen) GetStates() []*state.State {
 	return res
 }
 func (s *Screen) ScreenContoller() {
-
 	s.Controls.SetFocused(s.Views[0].GetKey())
+
 	s.State.AddHandler(utils.NdaKey(keyboard.KeyArrowRight), func(a ...any) {
 		if s.State.Curr == len(s.Views)-1 {
 			s.State.SetState(0)
@@ -55,6 +57,7 @@ func (s *Screen) ScreenContoller() {
 		s.State.SetState(s.State.Curr.(int) + 1)
 		s.Controls.SetFocused(s.Views[s.State.Curr.(int)].GetKey())
 	}, []any{})
+
 	s.State.AddHandler(utils.NdaKey(keyboard.KeyArrowLeft), func(a ...any) {
 		if s.State.Curr == 0 {
 			s.State.Curr = len(s.Views) - 1
@@ -64,15 +67,27 @@ func (s *Screen) ScreenContoller() {
 		s.State.SetState(s.State.Curr.(int) - 1)
 		s.Controls.SetFocused(s.Views[s.State.Curr.(int)].GetKey())
 	}, []any{})
-	s.Controls.SubscribeToController([]types.Event{utils.NdaKey(keyboard.KeyArrowRight), utils.NdaKey(keyboard.KeyArrowLeft)}, s.State)
+	s.State.AddHandler(utils.NdaKey(keyboard.KeyEsc), func(a ...any) {
+		s.State.SetState(s.State.Curr)
+	}, []any{})
+	s.Controls.SubscribeToController([]types.Event{utils.NdaKey(keyboard.KeyArrowRight), utils.NdaKey(keyboard.KeyArrowLeft), utils.NdaKey(keyboard.KeyEsc)}, s.State)
 }
 
+func (s *Screen) Mode() string {
+	idx := 0
+	if s.Controls.GetControls() {
+		idx = 1
+	}
+	return [...]string{"Input", "Normal"}[idx]
+}
 func (s *Screen) Render() {
 	states := []*state.State{}
 	states = append(states, s.GetStates()...)
 	states = append(states, s.State)
-	fmt.Printf(s.Show() + "\r")
+	states = append(states, s.CustomStates...)
+
+	fmt.Printf("%s %s %d \r", s.Show(), s.Mode(), s.State.Curr)
 	state.UseEffect(func(a ...any) {
-		fmt.Printf("%s %d %s", s.Show(), s.State.Curr.(int), "\r")
+		fmt.Printf("%s %s %d \r", s.Show(), s.Mode(), s.State.Curr)
 	}, []any{}, states)
 }

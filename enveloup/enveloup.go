@@ -1,7 +1,6 @@
 package enveloup
 
 import (
-	"fmt"
 	"log"
 	"sync"
 
@@ -45,6 +44,9 @@ func (e *Enveloup) ToggleControls() {
 func (e *Enveloup) SetFocused(focused string) {
 	e.currFocused = focused
 }
+func (e *Enveloup) GetControls() bool {
+	return e.controls
+}
 
 func (e *Enveloup) Subscribe(events []types.Event, state *state.State) {
 	e.mu.Lock()
@@ -55,7 +57,7 @@ func (e *Enveloup) Subscribe(events []types.Event, state *state.State) {
 	e.mu.Unlock()
 }
 
-func (e *Enveloup) SubscribeToController(events []types.Event, state *state.State) {
+func (e *Enveloup) SubscribeToController(events []types.Event, state *state.State) { // rewrite as Subcribe()
 	go func() {
 		for {
 			v, ok := <-e.controlsChan
@@ -82,20 +84,27 @@ func (e *Enveloup) Run() {
 				log.Print("err: ", err)
 				continue
 			}
-			if key == keyboard.KeyEsc {
+			if key == keyboard.KeyEsc { // fix later
 				e.ToggleControls()
-				continue
-			}
-			fmt.Println(e.subs, e.currFocused)
-			if e.controls {
 				go func() {
 					e.controlsChan <- types.Event{Key: key, Char: string(r)}
+				}()
+				continue
+			}
+			currEvent := types.Event{Key: key, Char: string(r)}
+			if e.controls {
+				go func() {
+					e.controlsChan <- currEvent
 				}()
 			} else {
 				go func() {
 					v, ok := e.subs[e.currFocused]
 					if ok {
-						v.Chan <- types.Event{Key: key, Char: string(r)}
+						for _, event := range v.Events {
+							if event == currEvent {
+								v.Chan <- types.Event{Key: key, Char: string(r)}
+							}
+						}
 					}
 				}()
 			}

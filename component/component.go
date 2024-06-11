@@ -32,6 +32,7 @@ func (c *Component) GetKey() string {
 func (c *Component) GetState() *state.State {
 	return c.State
 }
+
 func (c *Component) Init() {
 	c.State.AddHandler(utils.RuneKey("r"), func(a ...any) {
 		c.State.SetState(c.State.Curr.(int) + 1)
@@ -45,5 +46,5 @@ func (c *Component) Init() {
 }
 
 func (c *Component) Render() string {
-	return fmt.Sprintf("Count: %d", c.State.Curr)
+	return fmt.Sprintf("Count: %d ", c.State.Curr)
 }
