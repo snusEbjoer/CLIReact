@@ -20,19 +20,21 @@ type Sub struct {
 }
 
 type Enveloup struct {
-	events      chan types.Event
-	subs        map[string]Sub
-	controls    bool
-	currFocused string
-	mu          *sync.Mutex
+	events       chan types.Event
+	subs         map[string]Sub
+	controls     bool
+	controlsChan chan types.Event
+	currFocused  string
+	mu           *sync.Mutex
 }
 
 func New() *Enveloup {
 	return &Enveloup{
-		events:   make(chan types.Event),
-		subs:     make(map[string]Sub),
-		mu:       &sync.Mutex{},
-		controls: false,
+		events:       make(chan types.Event),
+		subs:         make(map[string]Sub),
+		controlsChan: make(chan types.Event),
+		mu:           &sync.Mutex{},
+		controls:     false,
 	}
 }
 func (e *Enveloup) ToggleControls() {
@@ -54,21 +56,25 @@ func (e *Enveloup) Subscribe(events []types.Event, state *state.State) {
 		for {
 			curr, ok := e.subs[e.currFocused]
 			v, open := <-e.events
-			if v.Key == keyboard.KeyEsc {
-				e.ToggleControls()
-				continue
-			}
-			if e.controls {
-				c, ok := e.subs["controller"]
-				if ok {
-					c.Chan <- v
-					continue
-				}
-			}
 			if ok && open {
 				for _, event := range curr.Events {
 					if v == event {
+
 						curr.Chan <- v
+					}
+				}
+			}
+		}
+	}()
+}
+func (e *Enveloup) SubscribeToController(events []types.Event, state *state.State) {
+	go func() {
+		for {
+			v, ok := <-e.controlsChan
+			if ok {
+				for _, event := range events {
+					if v == event {
+						state.Events <- v
 					}
 				}
 			}
@@ -88,12 +94,22 @@ func (e *Enveloup) Run() {
 				log.Print("err: ", err)
 				continue
 			}
-			go func() {
-				_, ok := e.subs[e.currFocused]
-				if ok {
-					e.events <- types.Event{Key: key, Char: string(r)}
-				}
-			}()
+			if key == keyboard.KeyEsc {
+				e.ToggleControls()
+				continue
+			}
+			if e.controls {
+				go func() {
+					e.controlsChan <- types.Event{Key: key, Char: string(r)}
+				}()
+			} else {
+				go func() {
+					_, ok := e.subs[e.currFocused]
+					if ok {
+						e.events <- types.Event{Key: key, Char: string(r)}
+					}
+				}()
+			}
 		}
 	}()
 }

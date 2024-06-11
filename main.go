@@ -9,10 +9,12 @@ import (
 func main() {
 	e := enveloup.New()
 	c := component.New(0, "count", e)
+	c2 := component.New(0, "count2", e)
 	c.Init()
-	s := screen.New([]screen.Renderer{c}, e)
+	c2.Init()
+	s := screen.New([]screen.Renderer{c, c2}, e)
 	s.ScreenContoller()
-	s.Render()
 	e.Run()
+	s.Render()
 	select {}
 }

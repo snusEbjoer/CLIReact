@@ -37,6 +37,7 @@ func (c *Component) Init() {
 		c.State.SetState(c.State.Curr.(int) + 1)
 		c.View = strconv.Itoa(c.State.Curr.(int))
 	}, []any{})
+
 	c.State.AddHandler(utils.RuneKey("q"), func(a ...any) {
 		log.Fatal("exit")
 	}, []any{})

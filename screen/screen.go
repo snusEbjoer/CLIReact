@@ -18,15 +18,15 @@ type Renderer interface {
 
 type Screen struct {
 	Views    []Renderer
-	curr     int
 	Controls *enveloup.Enveloup
+	State    *state.State
 }
 
 func New(views []Renderer, controller *enveloup.Enveloup) *Screen {
 	return &Screen{
 		views,
-		0, // fix later
 		controller,
+		state.New(0, "controller"),
 	}
 }
 func (s *Screen) Show() string {
@@ -44,32 +44,35 @@ func (s *Screen) GetStates() []*state.State {
 	return res
 }
 func (s *Screen) ScreenContoller() {
-	controllerState := state.New(0, "controller")
+
 	s.Controls.SetFocused(s.Views[0].GetKey())
-	controllerState.AddHandler(utils.NdaKey(keyboard.KeyArrowRight), func(a ...any) {
-		if s.curr == len(s.Views)-1 {
-			s.curr = 0
-			s.Controls.SetFocused(s.Views[s.curr].GetKey())
+	s.State.AddHandler(utils.NdaKey(keyboard.KeyArrowRight), func(a ...any) {
+		if s.State.Curr == len(s.Views)-1 {
+			s.State.SetState(0)
+			s.Controls.SetFocused(s.Views[s.State.Curr.(int)].GetKey())
 			return
 		}
-		s.curr++
-		s.Controls.SetFocused(s.Views[s.curr].GetKey())
+		s.State.SetState(s.State.Curr.(int) + 1)
+		s.Controls.SetFocused(s.Views[s.State.Curr.(int)].GetKey())
 	}, []any{})
-	controllerState.AddHandler(utils.NdaKey(keyboard.KeyArrowLeft), func(a ...any) {
-		if s.curr == 0 {
-			s.curr = len(s.Views) - 1
-			s.Controls.SetFocused(s.Views[s.curr].GetKey())
+	s.State.AddHandler(utils.NdaKey(keyboard.KeyArrowLeft), func(a ...any) {
+		if s.State.Curr == 0 {
+			s.State.Curr = len(s.Views) - 1
+			s.Controls.SetFocused(s.Views[s.State.Curr.(int)].GetKey())
 			return
 		}
-		s.curr--
-		s.Controls.SetFocused(s.Views[s.curr].GetKey())
+		s.State.SetState(s.State.Curr.(int) - 1)
+		s.Controls.SetFocused(s.Views[s.State.Curr.(int)].GetKey())
 	}, []any{})
-	s.Controls.Subscribe([]types.Event{utils.NdaKey(keyboard.KeyArrowRight), utils.NdaKey(keyboard.KeyArrowLeft)}, controllerState)
+	s.Controls.SubscribeToController([]types.Event{utils.NdaKey(keyboard.KeyArrowRight), utils.NdaKey(keyboard.KeyArrowLeft)}, s.State)
 }
 
 func (s *Screen) Render() {
+	states := []*state.State{}
+	states = append(states, s.GetStates()...)
+	states = append(states, s.State)
 	fmt.Printf(s.Show() + "\r")
 	state.UseEffect(func(a ...any) {
-		fmt.Printf(s.Show() + "\r")
-	}, []any{}, s.GetStates())
+		fmt.Printf("%s %d %s", s.Show(), s.State.Curr.(int), "\r")
+	}, []any{}, states)
 }
