@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	e := enveloup.New()
+	e := enveloup.New() // SINGLETON
 	c := component.New(0, "count", e)
 	c2 := component.New(0, "count2", e)
 	c.Init()

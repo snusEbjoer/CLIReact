@@ -1,6 +1,7 @@
 package enveloup
 
 import (
+	"fmt"
 	"log"
 	"sync"
 
@@ -52,21 +53,8 @@ func (e *Enveloup) Subscribe(events []types.Event, state *state.State) {
 		Chan:   state.Events,
 	}
 	e.mu.Unlock()
-	go func() {
-		for {
-			curr, ok := e.subs[e.currFocused]
-			v, open := <-e.events
-			if ok && open {
-				for _, event := range curr.Events {
-					if v == event {
-
-						curr.Chan <- v
-					}
-				}
-			}
-		}
-	}()
 }
+
 func (e *Enveloup) SubscribeToController(events []types.Event, state *state.State) {
 	go func() {
 		for {
@@ -98,15 +86,16 @@ func (e *Enveloup) Run() {
 				e.ToggleControls()
 				continue
 			}
+			fmt.Println(e.subs, e.currFocused)
 			if e.controls {
 				go func() {
 					e.controlsChan <- types.Event{Key: key, Char: string(r)}
 				}()
 			} else {
 				go func() {
-					_, ok := e.subs[e.currFocused]
+					v, ok := e.subs[e.currFocused]
 					if ok {
-						e.events <- types.Event{Key: key, Char: string(r)}
+						v.Chan <- types.Event{Key: key, Char: string(r)}
 					}
 				}()
 			}
