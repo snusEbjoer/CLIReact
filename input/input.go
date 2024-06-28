@@ -18,11 +18,13 @@ type Input struct {
 }
 
 func New(stateValue any, key string, envelope *enveloup.Enveloup) *Input {
-	return &Input{
+	input := &Input{
 		View:     "",
 		State:    state.New(stateValue, key),
 		Enveloup: envelope,
 	}
+	input.init()
+	return input
 }
 
 func (i *Input) GetKey() string {
@@ -32,23 +34,26 @@ func (i *Input) GetState() *state.State {
 	return i.State
 }
 
-func (i *Input) Init() {
+func (i *Input) init() {
 	al := "abcdefghijklmnopqrstuvwxyz"
-	i.Events = []types.Event{}
 	for _, char := range al {
 		keyEvent := utils.RuneKey(string(char))
+
 		i.State.AddHandler(keyEvent, func(a ...any) {
 			i.State.SetState(i.State.Curr.(string) + string(char))
-		}, []any{})
+		})
+
 		i.Events = append(i.Events, keyEvent)
 	}
+
 	i.State.AddHandler(utils.NdaKey(keyboard.KeyBackspace2), func(a ...any) {
 		curr := []rune(i.State.Curr.(string))
 		if len(curr) == 0 {
 			return
 		}
 		i.State.SetState(string(curr[0 : len(curr)-1]))
-	}, []any{})
+	})
+
 	i.Events = append(i.Events, utils.NdaKey(keyboard.KeyBackspace2))
 	i.Enveloup.Subscribe(i.Events, i.State)
 }

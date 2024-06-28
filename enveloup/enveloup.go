@@ -9,11 +9,6 @@ import (
 	"github.com/snusEbjoer/cli-react/state"
 )
 
-type StateValue interface {
-	GetChan() chan types.Event
-	GetKey() string
-}
-
 type Sub struct {
 	Events []types.Event
 	Chan   chan types.Event

@@ -13,7 +13,6 @@ import (
 
 type Renderer interface {
 	Render() string
-	GetKey() string
 	GetState() *state.State
 }
 
@@ -33,31 +32,9 @@ func New(views []Renderer, controller *enveloup.Enveloup) *Screen {
 	}
 }
 
-var activeTabBorder = lipgloss.Border{
-	Top:         "─",
-	Bottom:      " ",
-	Left:        "│",
-	Right:       "│",
-	TopLeft:     "╭",
-	TopRight:    "╮",
-	BottomLeft:  "┘",
-	BottomRight: "└",
-}
-
-var tabBorder = lipgloss.Border{
-	Top:         "─",
-	Bottom:      "─",
-	Left:        "│",
-	Right:       "│",
-	TopLeft:     "╭",
-	TopRight:    "╮",
-	BottomLeft:  "┴",
-	BottomRight: "┴",
-}
-
 func (s *Screen) Show() string {
-	var focusedStyle = lipgloss.NewStyle().Border(activeTabBorder).Height(1).Width(5)
-	var defaultStyle = lipgloss.NewStyle().Border(tabBorder).Height(1).Width(5)
+	var focusedStyle = lipgloss.NewStyle().Border(lipgloss.NormalBorder()).Height(1).Width(7).Foreground(lipgloss.Color("#7D56F4"))
+	var defaultStyle = lipgloss.NewStyle().Border(lipgloss.NormalBorder()).Height(1).Width(7)
 
 	view := []string{}
 	for i, v := range s.Views {
@@ -78,31 +55,31 @@ func (s *Screen) GetStates() []*state.State {
 	return res
 }
 func (s *Screen) ScreenContoller() {
-	s.Controls.SetFocused(s.Views[0].GetKey())
+	s.Controls.SetFocused(s.Views[0].GetState().Key)
 
 	s.State.AddHandler(utils.NdaKey(keyboard.KeyArrowRight), func(a ...any) {
 		if s.State.Curr == len(s.Views)-1 {
 			s.State.SetState(0)
-			s.Controls.SetFocused(s.Views[s.State.Curr.(int)].GetKey())
+			s.Controls.SetFocused(s.Views[s.State.Curr.(int)].GetState().Key)
 			return
 		}
 		s.State.SetState(s.State.Curr.(int) + 1)
-		s.Controls.SetFocused(s.Views[s.State.Curr.(int)].GetKey())
-	}, []any{})
+		s.Controls.SetFocused(s.Views[s.State.Curr.(int)].GetState().Key)
+	})
 
 	s.State.AddHandler(utils.NdaKey(keyboard.KeyArrowLeft), func(a ...any) {
 		if s.State.Curr == 0 {
 			s.State.Curr = len(s.Views) - 1
-			s.Controls.SetFocused(s.Views[s.State.Curr.(int)].GetKey())
+			s.Controls.SetFocused(s.Views[s.State.Curr.(int)].GetState().Key)
 			return
 		}
 		s.State.SetState(s.State.Curr.(int) - 1)
-		s.Controls.SetFocused(s.Views[s.State.Curr.(int)].GetKey())
-	}, []any{})
+		s.Controls.SetFocused(s.Views[s.State.Curr.(int)].GetState().Key)
+	})
 
 	s.State.AddHandler(utils.NdaKey(keyboard.KeyEsc), func(a ...any) {
 		s.State.SetState(s.State.Curr)
-	}, []any{})
+	})
 
 	s.Controls.SubscribeToController([]types.Event{utils.NdaKey(keyboard.KeyArrowRight), utils.NdaKey(keyboard.KeyArrowLeft), utils.NdaKey(keyboard.KeyEsc)}, s.State)
 }
@@ -120,8 +97,8 @@ func (s *Screen) Render() {
 	states = append(states, s.State)
 	states = append(states, s.CustomStates...)
 
-	//fmt.Printf("%s", s.Show())
 	state.UseEffect(func(a ...any) {
+		fmt.Print("\033[H\033[J")
 		fmt.Printf("%s", s.Show())
-	}, []any{}, states)
+	}, []any{}, states...)
 }

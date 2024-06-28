@@ -20,11 +20,13 @@ type Component struct {
 const RuneKey = 0
 
 func New(stateValue any, key string, envelope *enveloup.Enveloup) *Component {
-	return &Component{
+	c := &Component{
 		View:     "",
 		State:    state.New(stateValue, key),
 		Enveloup: envelope,
 	}
+	c.init()
+	return c
 }
 func (c *Component) GetKey() string {
 	return c.State.Key
@@ -33,16 +35,16 @@ func (c *Component) GetState() *state.State {
 	return c.State
 }
 
-func (c *Component) Init() {
+func (c *Component) init() {
 	c.State.AddHandler(utils.RuneKey("r"), func(a ...any) {
 		c.State.SetState(c.State.Curr.(int) + 1)
 		c.View = strconv.Itoa(c.State.Curr.(int))
-	}, []any{})
+	})
 
 	c.State.AddHandler(utils.RuneKey("q"), func(a ...any) {
 		log.Fatal("exit")
-	}, []any{})
-	c.Enveloup.Subscribe([]types.Event{utils.RuneKey("r"), utils.RuneKey("q")}, c.State)
+	})
+	c.Enveloup.Subscribe([]types.Event{utils.RuneKey("r"), utils.RuneKey("q")}, c.State) // TODO move events to envelope
 }
 
 func (c *Component) Render() string {

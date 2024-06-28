@@ -33,7 +33,7 @@ func New(value any, key string) *State {
 	return s
 }
 
-func UseEffect(fn func(...any), args []any, dep []*State) {
+func UseEffect(fn func(...any), args []any, dep ...*State) {
 	go func() {
 		for {
 			for _, s := range dep {
@@ -52,7 +52,7 @@ func (s *State) SetState(value any) {
 	s.changed = true
 }
 
-func (s *State) AddHandler(event types.Event, fn func(...any), args []any) {
+func (s *State) AddHandler(event types.Event, fn func(...any), args ...any) {
 	s.mu.Lock()
 	s.handlers[event] = Handler{fn, args}
 	s.mu.Unlock()
