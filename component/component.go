@@ -5,25 +5,23 @@ import (
 	"log"
 	"strconv"
 
-	"github.com/snusEbjoer/cli-react/enveloup"
-	"github.com/snusEbjoer/cli-react/pkg/types"
-	"github.com/snusEbjoer/cli-react/pkg/utils"
-	"github.com/snusEbjoer/cli-react/state"
+	"github.com/snusEbjoer/cli-react/react"
+	"github.com/snusEbjoer/cli-react/reactlib"
 )
 
 type Component struct {
-	View     string
-	State    *state.State
-	Enveloup *enveloup.Enveloup
+	View  string
+	State *reactlib.State
+	React *react.React
 }
 
 const RuneKey = 0
 
-func New(stateValue any, key string, envelope *enveloup.Enveloup) *Component {
+func New(stateValue any, key string, react *react.React) *Component {
 	c := &Component{
-		View:     "",
-		State:    state.New(stateValue, key),
-		Enveloup: envelope,
+		View:  "",
+		State: react.UseState(stateValue, key),
+		React: react,
 	}
 	c.init()
 	return c
@@ -31,20 +29,19 @@ func New(stateValue any, key string, envelope *enveloup.Enveloup) *Component {
 func (c *Component) GetKey() string {
 	return c.State.Key
 }
-func (c *Component) GetState() *state.State {
+func (c *Component) GetState() *reactlib.State {
 	return c.State
 }
 
 func (c *Component) init() {
-	c.State.AddHandler(utils.RuneKey("r"), func(a ...any) {
+	c.State.AddHandler(reactlib.RuneKey("r"), func(a ...any) {
 		c.State.SetState(c.State.Curr.(int) + 1)
 		c.View = strconv.Itoa(c.State.Curr.(int))
 	})
 
-	c.State.AddHandler(utils.RuneKey("q"), func(a ...any) {
+	c.State.AddHandler(reactlib.RuneKey("q"), func(a ...any) {
 		log.Fatal("exit")
 	})
-	c.Enveloup.Subscribe([]types.Event{utils.RuneKey("r"), utils.RuneKey("q")}, c.State) // TODO move events to envelope
 }
 
 func (c *Component) Render() string {
